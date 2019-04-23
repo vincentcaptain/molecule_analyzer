@@ -131,13 +131,8 @@ else
 end
 
 [mol_name_new, x_new] = getMoleculePerFrame(bond_new, config_new, mol_name, bond, config, x_mol, atom);
-[x0_2, store_new_2] = getFirstNumOfMol(bond_new, config_new);
 [x0, store_new] = getNumOfMol(bond_new, config_new, bond, config, x, store, atom);
-for i=1:size(x0,1)
-    if x0(i) ~= x0_2(i)
-        disp(i)
-    end
-end
+
 
 
 end
