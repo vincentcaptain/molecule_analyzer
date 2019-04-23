@@ -9,19 +9,13 @@ same folder as the 'log_read' files.
 '''
 
 import log_read_md as readMols
-import log_read_reacts as readReacts
 
 maxframenum = 47000   # varies with file. Just set to the maximum
 
 molfiles = []
-reactfiles = []
 sets = ['80']       # could be useful if you want to process multiple files at once
 
 for i in sets:
-    print(i)    
-    molfiles.append('mine.out')
-    # reactfiles.append('mine.out')
-    
-# [moleculedict, newmoldict, bonded_reaction, bond_dist] = readMols.getMols(molfiles, maxframenum)
+    molfiles.append('3600K_isobutane.out')
+
 readMols.getMols(molfiles, maxframenum)
-# readReacts.getReacts(reactfiles, maxframenum, moleculedict, newmoldict, bonded_reaction, bond_dist)
