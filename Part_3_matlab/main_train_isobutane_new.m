@@ -9,16 +9,16 @@ global mmC1
 global newmoldict
 
 % Reset workspace
-addpath('C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Modifying\new-matlab_Local\');
+addpath('C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Modifying_2\matlab\');
 codedir = pwd;
-databasedir = 'C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Modifying\new-matlab_Local\input_isobutane';
+databasedir = 'C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Modifying_2\matlab\input_isobutane';
 
 %% Settings
 tag = 'fullstoch'; % label for saving files
 npttrain = 1; % ID of molecular dynamics simulation
 b = 1; % tau = b*0.012 picoseconds
-molnames = {'CH4'}; % printed name for molecules
-molfullnames = {'C1 H4 4(H-C) '}; % name for molecules in moleculedict.txt
+molnames = {'CH4', 'H2'}; % printed name for molecules
+molfullnames = {'C1 H4 4(H-C) ', 'H2 1(H-H) '}; % name for molecules in moleculedict.txt
 molsfound = length(molfullnames);
 numUQ = 1; % number of Gillespie simulations
 numatoms = 200;
@@ -59,7 +59,6 @@ numframes = size(mD, 1);
 molids = zeros(molsfound, 1);
 mmolids = zeros(molsfound, 1);
 for molidx = 1:molsfound
-    molids(molidx) = getMolidByName(molfullnames(molidx), datadir, 0); %Give an ID nb to each molecule
     mmolids(molidx) = getMolidByName(molfullnames(molidx), datadir, 1);
 end
 
@@ -93,7 +92,6 @@ ireactm = ireactmat(ireactmat ~= 0);  %% finds all values != 0 and puts into col
 
 % save mD and rpfC into global variables for elemReactGSSA_calcrates; 
 % NOTE: THIS IS LEGACY CODE FOR MULTIPLE MD; MAY BE MODIFIED IN FUTURE VERSIONS
-% mD = mD(mD(:,11) <= 39, :);
 mC1 = full(mD);
 rpfC1 = rpfC;
 mmC1 = full(mmD);
@@ -106,39 +104,10 @@ else
 end
 
 [k_train_iso, rarereacts,sumr,lenyesr,sumc, dk] = elemReactGSSA_calcrates(tag, 1, rC, rbC, startcalcframe, endframe, tscaleps, 1, 0, tag); %% this gets all the reaction rates.
-% if plotkflag
-%     % plot k's
-%     figure(100);
-%     h = stem(k_train_iso, ':diamondr', 'fill');
-%     hbase = get(h, 'Baseline');
-%     set(hbase, 'Visible', 'off');
-%     xlabel('Elementary Reaction Index', 'FontSize', 16);
-%     ylabel('k (conc/picosecond)', 'FontSize', 16);
-%     title('Reaction Rate Coefficients', 'FontSize', 20);
-%     set(gca, 'FontSize', 14);
-% end
 disp('Get reaction rates');
 
 %% Gillespie Stochastic Simulation
 
-% Get the initial conditions
-% NOTE: it's important that all concentrations are integers,
-% or else there can be negative molecular concentrations!
-% set = load('C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Cyclopropane\matlab_result\With10ps\all_data.dat', '-mat');
-% 
-% nummols_2 = set.nummols;
-% numatoms_2 = set.numatoms;
-% datadir_2 = 'C:\Users\Vincent\Stanford\Research\Code\Analysis\New_analysis_development\Analysis2.0\Cyclopropane\python_result';
-% startcalcframe_2 = set.startcalcframe;
-% 
-% B = zeros(1,numatoms_2,10);
-% C = zeros(1,numatoms_2);
-% [bond, config] = getBondData(datadir_2, numatoms_2 ,startcalcframe_2);
-% B(1,:,:) = bond;
-% C(1,:,:) = config;
-% [mDinit, ] = getNumOfMol(B(1,:,:), C(1,:,:), datadir);
-
-%%
 mDinit = zeros(nummols, 1);
 [bond, config] = getBondData(datadir, numatoms ,startcalcframe);
 if startframe == 0
@@ -155,7 +124,6 @@ for simulcount = 1:numUQ  %% how many Gillespie simuations we're running
     disp('Starting KMC');
    [tgssa, x, simreacts, numt, molecule_name] = elemReactGSSA_wrapper(bond, config,numatoms, mDinit, k_train_iso, 2, runframes, tscaleps); %% this actually does the advancing
    disp('Finished KMC');
-%     [molecule_name, molperframe] = getMoleculePerFrame(bondfinal, configfinal);
    truerunframes = round(numt/tscaleps);    %% true because it's based on simulation; always <= runframes
    tscaled = tgssa/tscaleps;    %% tgssa is all timeframes concatenated into column vector
    tscaled(end) = round(tscaled(end));  %% get the last timestep
@@ -172,86 +140,49 @@ for simulcount = 1:numUQ  %% how many Gillespie simuations we're running
    xinterp_avg_train_iso = xinterp_avg_train_iso + xinterp;
    simulcount;   %% print for sanity check
 end
+
 xinterp_avg_train_iso = xinterp_avg_train_iso/numUQ;
 trange = 1 + (0:truerunframes);   %% 1-indexed row vector of runframes
 timerange = (startframe + trange - 1) * tscaleps; %% row vector of timestamps
 timerangeidx = startframe + (0:runframes);
 timerange = timerangeidx * tscaleps;
 
-end
-save('all_data.mat','-v7.3');
+% save('all_data.mat','-v7.3');
 
-% % Plot Simulation Results
-% if simulflag
-% %     if tau(tstep) == 1 || tau(tstep) == 8 || tau(tstep) == 16
-%         for merr = 1:molsfound
-%             figure(merr); hold all;
-%             plot(timerange', xinterp_avg_train_iso(:, merr), 'linewidth', 3.5);
-%         end
-% %     end
+% Plot Simulation Results
+if simulflag
+    for merr = 1:molsfound
+        figure(merr); hold all;
+        plot(timerange', xinterp_avg_train_iso(:, merr), 'linewidth', 3.5);
+    end
+end
+
+nnzk = sum(k_train_iso~=0);
+
+end
+
+%% Plot the MD simulations
+for merr = 1:molsfound
+    figure(merr);
+    molidx = mmolids(merr);
+    plot(timerange', mmC1(timerangeidx, molidx), 'k', 'linewidth', 3);
+    h = legend('KMC', 'MD', 'fontsize', 24, 'Location', 'eastoutside');
+    set(gca, 'fontsize', 30);
+    set(gca, 'ticklength', [0.03 0.03]);
+    set(gca, 'linewidth', 3.5);
+    xlabel('Time (ps)');
+    ylabel('Number of molecules');
+    title(molnames(merr));
+end
+
+%% Save figures to file
+% for fig = 1:molsfound+2
+%     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-depsc', '-r600');
+%     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-dpdf', '-r600');
+%     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-dpng', '-r600');
 % end
-% 
-% nnzk = sum(k_train_iso~=0);
-% % save(['xinterp_train_iso_', num2str(tau(tstep)), '.mat'], 'timerangeidx', 'timerange', 'xinterp_avg_train_iso', 'k_train_iso')
-% 
-% % Find rms error
-% for merr = 1:molsfound
-%     molidx = molids(merr);
-%     error_train_iso(tstep, merr) = sqrt(immse(xinterp_avg_train_iso(:, merr), mC1(timerangeidx, molidx)));
-%     meanmols_train_iso(tstep, merr) = mean(xinterp_avg_train_iso(:, merr));
-% end
-% 
-% end
-% 
-% %% Plot the MD simulations
-% for merr = 1:molsfound
-%     figure(merr);
-%     molidx = mmolids(merr);
-%     plot(timerange', mmC1(timerangeidx, molidx), 'k', 'linewidth', 3);
-%     h = legend('KMC', 'MD', 'fontsize', 24, 'Location', 'eastoutside');
-% %     P = get(h, 'Position');
-% %     hAxes = axes('Parent', h.Parent, 'Units', h.Units, 'Position', [P(1)-0.005 P(2) P(3) P(4)], 'XTick', [], 'YTick', [], ...
-% %         'Color', 'none', 'YColor', 'none', 'XColor', 'none', 'HandleVisibility', 'off', 'HitTest', 'off');
-% %     hTitle = title(hAxes, '\tau values');
-% %     set(hTitle, 'fontsize', 28);
-%     set(gca, 'fontsize', 30);
-%     set(gca, 'ticklength', [0.03 0.03]);
-%     set(gca, 'linewidth', 3.5);
-%     xlabel('Time (ps)');
-%     ylabel('Number of molecules');
-%     title(molnames(merr));
-% end
-% 
-% %% Plot errors
-% % figure(molsfound + 1);
-% % plot(tau2', error_train_iso(:, [1 2 3]), '-o', 'Linewidth', 2.5, 'MarkerSize', 10, 'MarkerFaceColor', 'w');
-% % x = [0.192; 0.192]; y = [1, 12];
-% % line(x, y, 'Color', [0 0 0], 'linewidth', 2, 'linestyle', '--');
-% % box off; axis([0 1.5 0 16]);
-% % set(gca, 'fontsize', 16);
-% % set(gca, 'ticklength', [0.02 0.02]);
-% % set(gca, 'linewidth', 1.5);
-% % xlabel('\tau (ps)');
-% % ylabel('RMSE (molecules)');
-% % legend(molnames(1:3));
-% % 
-% % figure(molsfound + 2);
-% % plot(tau2', error_train_iso./meanmols_train_iso, '-o', 'Linewidth', 2.5, 'MarkerSize', 10, 'MarkerFaceColor', 'w');
-% % box off;
-% % set(gca, 'fontsize', 16);
-% % set(gca, 'ticklength', [0.02 0.02]);
-% % set(gca, 'linewidth', 1.5);
-% % xlabel('\tau (ps)');
-% % ylabel('Relative error');
-% % legend(molnames);
-% 
-% %% Save figures to file
-% % for fig = 1:molsfound+2
-% %     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-depsc', '-r600');
-% %     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-dpdf', '-r600');
-% %     print(figure(fig), ['Figure_train_iso_', num2str(fig)], '-dpng', '-r600');
-% % end
-% % save('fluct_train_iso.mat', 'fluct_train_iso');
-% % save('error_train_iso.mat', 'error_train_iso', 'meanmols_train_iso')
-% save('test_2.dat');
-% toc
+% save('fluct_train_iso.mat', 'fluct_train_iso');
+% save('error_train_iso.mat', 'error_train_iso', 'meanmols_train_iso')
+save('test_2.dat');
+toc
+

@@ -46,6 +46,7 @@ function [k,rarereacts,sumr,lenyesr,sumc, dk] = elemReactGSSA_calcrates(kname,se
             concreact(concreact<0) = 0; %% take all negative numbers and set to 0, maybe if you said reaction is ready but 
 %             concreact = prod(eval(['mC',num2str(setidx),'(reactready+startframe-1,ireact)']).^concexpireactmat(1:length(yesreact),:),2);
             
+
             dk(r) = dk(r) + sum(dkdt);
             sumr(r) = sumr(r) + sum(dkdt(yesreact));    %% records total number of times reaction appears
             lenyesr(r) = lenyesr(r) + length(yesreact); %% records how many instances of good reactions
@@ -55,8 +56,14 @@ function [k,rarereacts,sumr,lenyesr,sumc, dk] = elemReactGSSA_calcrates(kname,se
         setidx;   %% print for a sanity check
     end
 
-    % dk/dt = k*conc; take k to be average over yesreact timesteps as
     % defined by MLE of Poisson rv
+    % There is a modification here compared with Qian's code and
+    % calculations: in the local case, it is possible to have
+    % several reactions happening at one step. However, the
+    % reactants of the 2nd reaction (for example) may not be
+    % present at the beginning of the timestep, so yesreact = 0. In
+    % order to deal with that, I consider that the reaction was ready if it
+    % happened.
     k = (dk./(sumc))/(tscaleps);  %% equation 4 in Qian's paper
     k(sumc == 0) = 0; %% where concentrations are 0, also set k to 0. Only for combining data sets
     % remove rare events

@@ -1,6 +1,8 @@
-function [x_new,x0, bond_new, config_new, mol_name_new] = makeReaction(bond, config, mu, mol_name)
+function [x_new,x0, bond_new, config_new, mol_name_new, store_new] = makeReaction(bond, config, mu, mol_name, x_mol, x0_old, store_old)
+% Make the reaction happen and update all the variables.
 
-[x, store] = getNumOfMol(bond, config);
+store = store_old;
+x = x0_old;
 global reactset;
 config_new = config;
 bond_new = bond;
@@ -20,7 +22,7 @@ if sum(reactset(mu,:)) <0
                 j = 1;
                 counter_2 = 0;
                 while test == 0 && j <= size(find(store(mol(1), :,1)>0),2)
-                    k = ismember(store(mol(1), j,1),bond(1,atom(1),:));
+                    k = ismember(store(mol(1), j,1),bond(atom(1),:));
                     if ~k
                         test = 1;
                     end
@@ -39,7 +41,7 @@ if sum(reactset(mu,:)) <0
                     break
                 end
             end
-            while ismember(atom(2), bond(1,atom(1),:))
+            while ismember(atom(2), bond(atom(1),:))
                 atom(2) = store(mol(1), ceil(x(mol(1),1)*rand),1);
             end    
         else
@@ -51,7 +53,7 @@ if sum(reactset(mu,:)) <0
                     j = 1;
                     counter_2 = 0;
                     while test == 0 && j <= size(find(store(mol(2), :,1)>0),2)
-                        k = ismember(store(mol(2), j,1),bond(1,atom(1),:));
+                        k = ismember(store(mol(2), j,1),bond(atom(1),:));
                         if ~k
                             test = 1;
                         end
@@ -72,14 +74,14 @@ if sum(reactset(mu,:)) <0
                 end
             end
             if i ==2
-                while ismember(atom(2), bond(1,atom(1),:))
+                while ismember(atom(2), bond(atom(1),:))
                     atom(i) = store(mol(i), ceil(x(mol(i),1)*rand),1);
                 end
                 
             end
         end
     end
-    if ismember(atom(2), bond(1,atom(1),:))
+    if ismember(atom(2), bond(atom(1),:))
         disp('Careful');
     end
     if config_new(atom(1))>= 2000 && config_new(atom(2))>= 2000
@@ -91,10 +93,10 @@ if sum(reactset(mu,:)) <0
     end
     for i = 1:2
         j = 1;
-        while bond_new(1,atom(i),j)>0
+        while bond_new(atom(i),j)>0
             j = j+1;
         end
-        bond_new(1,atom(i),j) = atom(3-i);
+        bond_new(atom(i),j) = atom(3-i);
         config_new(atom(i)) = config_new(atom(i)) + modif;
     end
 else
@@ -113,13 +115,13 @@ else
     for i = 1:2
         j = 1;
         reax = 0;
-        while bond_new(1,atom(i),j)>0
+        while bond_new(atom(i),j)>0
             if reax == 1
-                bond_new(1,atom(i),j-1) = bond_new(1,atom(i),j);
-                bond_new(1,atom(i),j) = 0;
+                bond_new(atom(i),j-1) = bond_new(atom(i),j);
+                bond_new(atom(i),j) = 0;
             end
-            if bond_new(1,atom(i),j) == atom(3-i)
-                bond_new(1,atom(i),j) = 0;
+            if bond_new(atom(i),j) == atom(3-i)
+                bond_new(atom(i),j) = 0;
                 reax = 1;
             end
             j = j+1;
@@ -127,8 +129,17 @@ else
         config_new(atom(i)) = config_new(atom(i)) - modif;
     end
 end
-[mol_name_new, x_new] = getMoleculePerFrame(bond_new, config_new, mol_name);
-[x0, store] = getNumOfMol(bond_new, config_new);
+
+[mol_name_new, x_new] = getMoleculePerFrame(bond_new, config_new, mol_name, bond, config, x_mol, atom);
+[x0_2, store_new_2] = getFirstNumOfMol(bond_new, config_new);
+[x0, store_new] = getNumOfMol(bond_new, config_new, bond, config, x, store, atom);
+for i=1:size(x0,1)
+    if x0(i) ~= x0_2(i)
+        disp(i)
+    end
+end
+
+
 end
 
 

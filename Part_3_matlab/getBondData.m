@@ -1,5 +1,5 @@
 function [bond,config] = getBondData(datadir, numatoms, startframe);
-
+% Output the bond table and the config table.
 k = importdata([datadir, '/bondperframe_1.dat']);
 l = load([datadir, '/configperframe_1.dat']);
 l = spconvert(l);

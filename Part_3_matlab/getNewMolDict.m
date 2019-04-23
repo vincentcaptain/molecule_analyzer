@@ -1,5 +1,5 @@
 function newmoldict = getNewMolDict(datadir)
-
+% Get the list of atom configurations with their index
 
 newmoldict = zeros(1,2);
 fileID = fopen([datadir, '/newmoldict.txt']);
